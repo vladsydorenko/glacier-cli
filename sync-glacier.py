@@ -10,6 +10,7 @@ import os
 import json
 import datetime
 import time
+import argparse
 
 # Outputs the config file
 def write_config_file():
@@ -51,7 +52,7 @@ def generate_archive_name(dir):
 	name = date.today().strftime("%d_%m_%Y") + "__" + split_dir[-1] + ".zip";
 	return name
 
-config = "config.f"	
+config = "config_nongit.f"	
 # Make sure the config file exists
 if not os.path.exists(config):
 	print "Config file not found. Pass in a file with the vault name and the directory to sync on separate lines."
@@ -79,6 +80,16 @@ with open(config, 'rU') as f:
 			'size': int(size)
 		}
 
+if len(sys.argv) < 2:
+	print r"You need to give a job specifier e.g. -b or -dv or etc."
+	sys.exit(1)
+
+parser = argparse.ArgumentParser(description='Command line interface for Amazon Glacier')
+parser.add_argument('-c','--create', help='Create new vault', action="store_true")
+parser.add_argument('-dv','--delete', help='Delete vault', action="store_true")
+parser.add_argument('-b','--backup', help='Immediately backup data', action="store_true")
+arg = parser.parse_args()
+
 # Check some of the values in the config file
 if not access_key_id or not secret_key:
 	print "You need to give an access key and secret key to get access."
@@ -100,10 +111,15 @@ for dir in dirs:
 # Cool! Let's set up everything.
 connect_to_region(vault_info[1], aws_access_key_id=access_key_id, aws_secret_access_key=secret_key)
 glacier = Layer2(aws_access_key_id=access_key_id, aws_secret_access_key=secret_key, region_name=region)
-vault = glacier.get_vault(vault_name)
+
+if arg.backup or arg.delete:
+	vault = glacier.get_vault(vault_name)
+else:
+	print "Creating vault " + vault_name
+	vault = glacier.create_vault(vault_name)
 
 # Ah, we don't have a vault listing yet. 
-if not ls_present:
+if not ls_present and not arg.create:
 	# No job yet? Initiate a job.
 	if not inventory_job:
 		inventory_job = vault.retrieve_inventory()
@@ -119,13 +135,13 @@ if not ls_present:
 	
 	# Finished!
 	try:
-		data = json.loads(job.get_output().read())
+		inventory = json.loads(job.get_output().read())
 	except ValueError:
 		print "Something went wrong interpreting the data Amazon sent!"
 		sys.exit(1)
 	
 	ls = {}
-	for archive in data['ArchiveList']:
+	for archive in inventory['ArchiveList']:
 		ls[archive['ArchiveDescription']] = {
 			'id': archive['ArchiveId'],
 			'size': int(archive['Size']),
@@ -139,54 +155,82 @@ if not ls_present:
 
 # Let's upload!
 os.stat_float_times(False)
-try:
-	i = 0
-	transferred = 0
-	time_begin = time.time()
-	archives = []
-	# Format zip archive from folders
-	for dir in dirs:
-		name = generate_archive_name(dir)
-		print "Creating " + name
-		archives.append(name)
+if arg.backup or arg.create:
+	try:
+		i = 0
+		transferred = 0
+		time_begin = time.time()
+		archives = []
+		# Format zip archive from folders
+		for dir in dirs:
+			name = generate_archive_name(dir)
+			print "Creating " + name
+			archives.append(name)
+			# Import zlib to provide compressing
+			import zlib
+			zipf = zipfile.ZipFile(name, 'w', zipfile.ZIP_DEFLATED)
+			zipdir(dir, zipf)
+			zipf.close()
 
-		import zlib
-		zipf = zipfile.ZipFile(name, 'w', zipfile.ZIP_DEFLATED)
-		zipdir(dir, zipf)
-		zipf.close()
+		print "\nBeginning job on " + vault.arn
+		for archive in archives:				
+			try:
+				print archive + ": uploading... ",
+				path = os.getcwd() + os.sep + archive
+				size = os.path.getsize(path)
+				# Fix of bug in boto library. Converts vault name to Unicode
+				vault.name = str(vault.name)
 
-	print "\nBeginning job on " + vault.arn
-	for archive in archives:				
+				id = vault.concurrent_create_archive_from_file(path, archive)
+				ls[archive] = {
+					'id': id,
+					'size': size
+				}
+				
+				write_config_file()
+				i += 1
+				transferred += size
+				print "done."
+			except UploadArchiveError as e:
+				print "FAILED TO UPLOAD: " + e.args[0]
+			except OSError as e:
+				print e.__doc__ + ':' + e.args
+			except Exception as e:
+				print e.args
+			finally:
+				# Delete temporary .zip archive
+				os.remove(os.getcwd() + os.sep + archive)
+
+				
+	finally:
+		elapsed_time = time.time() - time_begin
+		print "\n" + str(i) + " files successfully uploaded."
+		print "Transferred " + format_bytes(transferred) + " in " + format_time(elapsed_time) + " at rate of " + format_bytes(transferred / elapsed_time) + "/s."
+		sys.exit(0)
+
+elif arg.delete:
+	for name, data in ls.iteritems():
+		print 'Remove archive ID : ' + data['id']
 		try:
-			print archive + ": uploading... ",
-			path = os.getcwd() + os.sep + archive
-			size = os.path.getsize(path)
-			# Fix of bug in boto library. Converts vault name to Unicode
-			vault.name = str(vault.name)
-
-			id = vault.concurrent_create_archive_from_file(path, archive)
-			ls[archive] = {
-				'id': id,
-				'size': size
-			}
-			
-			write_config_file()
-			i += 1
-			transferred += size
-			print "done."
-		except UploadArchiveError as e:
-			print "FAILED TO UPLOAD: " + e.args[0]
-		except OSError as e:
-			print e.__doc__ + ':' + e.args
+			vault.delete_archive(data['id'])
+			print '  Successfully removed archive ' + name
 		except Exception as e:
 			print e.args
-		finally:
-			# Deleting of temporary .zip archive
-			os.remove(os.getcwd() + os.sep + archive)
 
-			
-finally:
-	elapsed_time = time.time() - time_begin
-	print "\n" + str(i) + " files successfully uploaded."
-	print "Transferred " + format_bytes(transferred) + " in " + format_time(elapsed_time) + " at rate of " + format_bytes(transferred / elapsed_time) + "/s."
-	sys.exit(0)
+			print 'Sleep 60 sec before retrying...'
+			time.sleep(60)
+
+			print 'Retry to remove archive ID : %s' % data['id']
+			try:
+				vault.delete_archive(data['id'])
+				print 'Successfully removed archive ID : %s' % data['id']
+			except:
+				print 'Cannot remove archive ID : %s' % data['id']
+
+	print 'Removing vault...'
+	try:
+		vault.delete()
+		print 'Vault removed.'
+	except Exception as e:
+		print "We can't remove the vault now. Please wait some time and try again. You can also remove it from the AWS console, now that all archives have been removed."
+		print e.args

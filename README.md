@@ -20,7 +20,7 @@ name | id | size
 Сonfiguration file must always named "config.f"
 ##Installation
 At first downlod all files to one folder. If you want to setup auto-backup every week, then run setup_backup.sh.
-This script requires [`boto`](https://github.com/boto/boto), so setup_backup.sh will be automatically installed, if it was not previously installed.
+This script requires [`boto`](https://github.com/boto/boto), so setup_backup.sh will automatically install it, if it was not previously installed.
 Also it will write itself to cron.
 Then script will start for first time and create vault. Logs will be written to backup.log file.
 

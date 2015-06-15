@@ -52,7 +52,7 @@ def generate_archive_name(dir):
 	name = date.today().strftime("%d_%m_%Y") + "__" + split_dir[-1] + ".zip";
 	return name
 
-config = "config_nongit.f"	
+config = "config.f"	
 # Make sure the config file exists
 if not os.path.exists(config):
 	print "Config file not found. Pass in a file with the vault name and the directory to sync on separate lines."
@@ -231,6 +231,9 @@ elif arg.delete:
 	try:
 		vault.delete()
 		print 'Vault removed.'
+
+		ls = []
+		write_config_file()
 	except Exception as e:
 		print "We can't remove the vault now. Please wait some time and try again. You can also remove it from the AWS console, now that all archives have been removed."
 		print e.args

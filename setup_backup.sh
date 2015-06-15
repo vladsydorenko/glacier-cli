@@ -21,6 +21,5 @@ rm mycron
 
 #Start syncronization for first time
 python sync-glacier.py -c > backup.log
-#remove first start
-rm first_start.py
+
 rm setup_backup.sh

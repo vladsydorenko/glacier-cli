@@ -19,7 +19,7 @@ echo "@weekly $DIR/sync-glacier.py -b > backup.log" >> mycron
 crontab mycron
 rm mycron
 
-#Start syncronization for first time
-python sync-glacier.py -c > backup.log
+#Create vault and start syncronization for first time
+python sync-glacier.py -c >> backup.log
 
 rm setup_backup.sh

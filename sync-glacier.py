@@ -63,7 +63,7 @@ def print_vault_list(v_list):
 		print (" " if vault.name != vault_name else '*') + vault.name
 
 
-config = "config_nongit.f"	
+config = "config.f"	
 # Make sure the config file exists
 if not os.path.exists(config):
 	print "Config file not found. Pass in a file with the vault name and the directory to sync on separate lines."

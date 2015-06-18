@@ -55,7 +55,7 @@ def zipdir(path, ziph):
 
 def generate_archive_name(dir):
 	split_dir = dir.split('/')
-	name = date.today().strftime("%d-%m-%Y__%H-%M") + "__" + split_dir[-1] + ".zip";
+	name = datetime.datetime.now().strftime("%d-%m-%Y__%H-%M") + "__" + split_dir[-1] + ".zip";
 	return name
 
 def print_vault_list(v_list):

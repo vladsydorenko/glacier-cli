@@ -15,7 +15,7 @@ crontab -l > mycron
 #get path to current folder
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 #echo new cron into cron file
-echo "@weekly $DIR/sync-glacier.py -b >> backup.log" >> mycron
+echo "@weekly cd $DIR && python $DIR/sync-glacier.py -b >> backup.log" >> mycron
 #install new cron file
 crontab mycron
 rm mycron

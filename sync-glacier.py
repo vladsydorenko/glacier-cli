@@ -114,9 +114,9 @@ group.add_argument('-c', '--create',   help='Create new vault', action="store_tr
 group.add_argument('-dv','--delete',   help='Delete vault', action="store_true")
 group.add_argument('-b', '--backup',   help='Immediately backup data', action="store_true")
 group.add_argument('-i', '--inventory',help='Initialize invertory retrieving job', action="store_true")
-group.add_argument('-g', '--get', 	   help='Get vault', action="store_true")
+group.add_argument('-g', '--get',      help='Get vault', action="store_true")
 group.add_argument('-gl','--get_last', help='Get only last backup', action="store_true")
-group.add_argument('-lv', '--list_vaults',help='List all vaults', action="store_true")
+group.add_argument('-lv','--list_vaults',help='List all vaults', action="store_true")
 group.add_argument('-lj','--list_jobs',help='List all running jobs', action="store_true")
 arg = parser.parse_args()
 
@@ -233,7 +233,7 @@ if arg.backup or arg.create:
 					'id': id,
 					'size': size
 				}
-				
+				inventory_present = 'Inventory size'
 				write_config_file()
 				i += 1
 				transferred += size

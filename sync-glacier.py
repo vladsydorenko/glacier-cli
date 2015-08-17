@@ -248,7 +248,8 @@ if arg.backup or arg.create:
 				# Delete temporary .zip archive
 				os.remove(os.getcwd() + os.sep + archive)
 
-				
+	except Exception as e:
+			print e.args			
 	finally:
 		elapsed_time = time.time() - time_begin
 		print "\n" + str(i) + " files successfully uploaded."

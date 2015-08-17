@@ -215,7 +215,7 @@ if arg.backup or arg.create:
 			archives.append(name)
 			# Import zlib to provide compressing
 			import zlib
-			zipf = zipfile.ZipFile(name, 'w', zipfile.ZIP_DEFLATED)
+			zipf = zipfile.ZipFile(name, 'w', zipfile.ZIP_DEFLATED, allowZip64=True)
 			zipdir(dir, zipf)
 			zipf.close()
 

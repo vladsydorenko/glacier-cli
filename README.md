@@ -1,4 +1,4 @@
-# sync-glacier
+# glacier-cli
 Simple and lightweight script, that provides command line interface for Amazon Glacier. Now supports creation and deletion of vaults, uploading and downloading folders, . Script creates .zip archive from folder and upload it to vault.
 ##Configuration
 First of all you should set parameters of vault and backup. Standart config file on first start looks like that:
@@ -6,7 +6,7 @@ First of all you should set parameters of vault and backup. Standart config file
 AKIAIOSFODNN7EXAMPLE
 wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 vault-name|eu-central-1
-push_to_folder_for_backup1 | push_to_folder_for_backup2
+path_to_folder_for_backup1 | path_to_folder_for_backup2
 ```
 First two lines are Amazon access key ID and secret key.
 Then write name of vault and region. Divide them by '|'.
